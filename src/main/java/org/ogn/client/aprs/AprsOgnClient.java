@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AprsOgnClient implements OgnClient {
 
-	private static Logger					LOG					= LoggerFactory.getLogger(AprsOgnClient.class);
+	private static final Logger				LOG					= LoggerFactory.getLogger(AprsOgnClient.class);
 
 	/**
 	 * read only pass-code
@@ -59,15 +59,15 @@ public class AprsOgnClient implements OgnClient {
 	 */
 	private static final String				READ_ONLY_PASSCODE	= "-1";
 
-	private String							aprsServerName;
-	private int								aprsPort;
-	private int								aprsPortFiltered;
-	private int								reconnectionTimeout;
-	private int								keepAlive;
-	private String							appName;
-	private String							appVersion;
-	private boolean							processReceiverBeacons;
-	private boolean							processAircraftBeacons;
+	private final String					aprsServerName;
+	private final int						aprsPort;
+	private final int						aprsPortFiltered;
+	private final int						reconnectionTimeout;
+	private final int						keepAlive;
+	private final String					appName;
+	private final String					appVersion;
+	private final boolean					processReceiverBeacons;
+	private final boolean					processAircraftBeacons;
 
 	private AircraftDescriptorProvider[]	descriptorProviders;
 
@@ -79,10 +79,9 @@ public class AprsOgnClient implements OgnClient {
 	private volatile Future<?>				keepAliveFuture;
 
 	private class AprsSocketListenerTask implements Runnable {
-		private Logger	SLLOG	= LoggerFactory.getLogger(AprsSocketListenerTask.class);
-		private String	aprsFilter;
+		private final String	aprsFilter;
 
-		private Socket	socket;
+		private Socket			socket;
 
 		public AprsSocketListenerTask(final String aprsFilter) {
 			this.aprsFilter = aprsFilter;
@@ -94,7 +93,7 @@ public class AprsOgnClient implements OgnClient {
 
 		@Override
 		public void run() {
-			SLLOG.debug("starting...");
+			LOG.debug("starting...");
 			boolean interrupted = false;
 
 			while (!interrupted) {
@@ -104,7 +103,7 @@ public class AprsOgnClient implements OgnClient {
 					int port = aprsPort;
 					String loginSentence = null;
 
-					String clientId = generateClientId();
+					final String clientId = generateClientId();
 					if (null == aprsFilter) {
 						loginSentence = formatAprsLoginLine(clientId, READ_ONLY_PASSCODE, appName, appVersion);
 					} else {
@@ -118,21 +117,21 @@ public class AprsOgnClient implements OgnClient {
 
 					socket = new Socket(aprsServerName, port);
 
-					PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+					final PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 					LOG.debug("logging in as: {}", loginSentence);
 					out.println(loginSentence);
 
 					// start the keep-live msg sender
 					startKeepAliveThread(out, loginSentence);
 
-					BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+					final BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					LOG.info("Connected. Waiting for data...");
 
 					String line;
 					while (!interrupted && (line = in.readLine()) != null) {
 						if (Thread.currentThread().isInterrupted()) {
 							interrupted = true;
-							SLLOG.warn("The AprsSocketListenerTask thread has been interrupted");
+							LOG.warn("The AprsSocketListenerTask thread has been interrupted");
 							break;
 						}
 
@@ -140,14 +139,16 @@ public class AprsOgnClient implements OgnClient {
 						processAprsLine(line);
 					}
 
-				} catch (Exception e) {
-					SLLOG.error("exception caught while trying to connect to {}:{}. retrying in {} ms", aprsServerName,
+				} catch (final Exception e) {
+					LOG.error("exception caught while trying to connect to {}:{}. retrying in {} ms", aprsServerName,
 							aprsPort, reconnectionTimeout, e);
 					try {
 						Thread.sleep(reconnectionTimeout);
-					} catch (InterruptedException ex) {
-						SLLOG.debug("interrupted exception caught while waiting before trying to re-connect");
+					} catch (final InterruptedException ex) {
+						LOG.debug("interrupted exception caught while waiting before trying to re-connect");
 						interrupted = true;
+						// Restore interrupted state...
+						Thread.currentThread().interrupt();
 					}
 				} finally {
 					closeSocket();
@@ -157,7 +158,7 @@ public class AprsOgnClient implements OgnClient {
 			} // while
 
 			closeSocket();
-			SLLOG.debug("stopped.");
+			LOG.debug("stopped.");
 
 		}// run
 
@@ -175,17 +176,13 @@ public class AprsOgnClient implements OgnClient {
 		 */
 		private void startKeepAliveThread(final PrintWriter out, final String msg) {
 			if (keepAliveFuture == null || keepAliveFuture.isCancelled()) {
-				keepAliveFuture = scheduledExecutor.scheduleAtFixedRate(new Runnable() {
-
-					@Override
-					public void run() {
-						String keepAliveMsg = msg.startsWith("#") ? msg : "#" + msg;
-						try {
-							LOG.debug("sending keep-alive message: {}", keepAliveMsg);
-							out.println(keepAliveMsg);
-						} catch (Exception ex) {
-							LOG.warn("exception caught while trying to send keep-alive msg", ex);
-						}
+				keepAliveFuture = scheduledExecutor.scheduleAtFixedRate(() -> {
+					final String keepAliveMsg = msg.startsWith("#") ? msg : "#" + msg;
+					try {
+						LOG.debug("sending keep-alive message: {}", keepAliveMsg);
+						out.println(keepAliveMsg);
+					} catch (final Exception ex) {
+						LOG.warn("exception caught while trying to send keep-alive msg", ex);
 					}
 				}, 0, keepAlive, TimeUnit.MILLISECONDS);
 			}
@@ -195,7 +192,7 @@ public class AprsOgnClient implements OgnClient {
 			try {
 				if (socket != null)
 					socket.close();
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				LOG.warn("could not close socket", e);
 			}
 		}
@@ -207,26 +204,59 @@ public class AprsOgnClient implements OgnClient {
 	 * @author wbuczak
 	 */
 	private class PollerTask implements Runnable {
-		private Logger PLOG = LoggerFactory.getLogger(PollerTask.class);
+
+		private Optional<AircraftDescriptor> findAircraftDescriptor(AircraftBeacon beacon) {
+			Optional<AircraftDescriptor> result = Optional.empty();
+			if (descriptorProviders != null) {
+				for (final AircraftDescriptorProvider provider : descriptorProviders) {
+					final Optional<AircraftDescriptor> ad = provider.findDescriptor(beacon.getAddress());
+					if (ad.isPresent()) {
+						result = ad;
+						break;
+					}
+				} // for
+			}
+
+			return result;
+		}
+
+		private <T extends OgnBeacon> void notifyAllListeners(final T ognBeacon, final String rawBeacon) {
+			if (ognBeacon instanceof AircraftBeacon) {
+				for (final AircraftBeaconListener listener : acBeaconListeners) {
+					final AircraftBeacon ab = (AircraftBeacon) ognBeacon;
+					final Optional<AircraftDescriptor> descriptor = findAircraftDescriptor(ab);
+
+					listener.onUpdate(ab, descriptor);
+				}
+
+			} else if (ognBeacon instanceof ReceiverBeacon) {
+				for (final ReceiverBeaconListener listener : brBeaconListeners) {
+					listener.onUpdate((ReceiverBeacon) ognBeacon);
+				}
+			} else {
+				LOG.warn("unrecognized beacon type: {} .ignoring..", ognBeacon.getClass().getName());
+			}
+		}
 
 		@Override
 		public void run() {
-			PLOG.trace("starting...");
+			LOG.trace("starting...");
 			String aprsLine = null;
 			while (!Thread.interrupted()) {
 
 				try {
 					aprsLine = aprsLines.take();
-					PLOG.trace(aprsLine);
-				} catch (InterruptedException e) {
-					PLOG.warn("interrupted exception caught. Was the poller task interrupted on purpose?");
+					LOG.trace(aprsLine);
+				} catch (final InterruptedException e) {
+					LOG.warn("interrupted exception caught. Was the poller task interrupted on purpose?");
+					// Restore interrupted state...
 					Thread.currentThread().interrupt();
 					continue;
 				}
 
 				try {
 
-					OgnBeacon beacon =
+					final OgnBeacon beacon =
 							AprsLineParser.get().parse(aprsLine, processAircraftBeacons, processReceiverBeacons);
 
 					// a beacon may be null in case in hasn't been parsed
@@ -235,11 +265,11 @@ public class AprsOgnClient implements OgnClient {
 					if (beacon != null) {
 						notifyAllListeners(beacon, aprsLine);
 					}
-				} catch (Exception ex) {
-					PLOG.warn("exception caught", ex);
+				} catch (final Exception ex) {
+					LOG.warn("exception caught", ex);
 				}
 			} // while
-			PLOG.trace("exiting..");
+			LOG.trace("exiting..");
 		}
 
 	}
@@ -338,10 +368,10 @@ public class AprsOgnClient implements OgnClient {
 
 	}
 
-	private CopyOnWriteArrayList<AircraftBeaconListener>	acBeaconListeners	= new CopyOnWriteArrayList<>();
-	private CopyOnWriteArrayList<ReceiverBeaconListener>	brBeaconListeners	= new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<AircraftBeaconListener>	acBeaconListeners	= new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<ReceiverBeaconListener>	brBeaconListeners	= new CopyOnWriteArrayList<>();
 
-	private BlockingQueue<String>							aprsLines			= new LinkedBlockingQueue<>();
+	private final BlockingQueue<String>							aprsLines			= new LinkedBlockingQueue<>();
 
 	/**
 	 * connects to the OGN APRS service
@@ -415,36 +445,4 @@ public class AprsOgnClient implements OgnClient {
 		brBeaconListeners.remove(listener);
 	}
 
-	private Optional<AircraftDescriptor> findAircraftDescriptor(AircraftBeacon beacon) {
-		Optional<AircraftDescriptor> result = Optional.empty();
-		if (descriptorProviders != null) {
-			for (AircraftDescriptorProvider provider : descriptorProviders) {
-				Optional<AircraftDescriptor> ad = provider.findDescriptor(beacon.getAddress());
-				if (ad != null) {
-					result = ad;
-					break;
-				}
-			} // for
-		}
-
-		return result;
-	}
-
-	private <T extends OgnBeacon> void notifyAllListeners(final T ognBeacon, final String rawBeacon) {
-		if (ognBeacon instanceof AircraftBeacon) {
-			for (AircraftBeaconListener listener : acBeaconListeners) {
-				AircraftBeacon ab = (AircraftBeacon) ognBeacon;
-				Optional<AircraftDescriptor> descriptor = findAircraftDescriptor(ab);
-
-				listener.onUpdate(ab, descriptor);
-			}
-
-		} else if (ognBeacon instanceof ReceiverBeacon) {
-			for (ReceiverBeaconListener listener : brBeaconListeners) {
-				listener.onUpdate((ReceiverBeacon) ognBeacon);
-			}
-		} else {
-			LOG.warn("unrecognized beacon type: {} .ignoring..", ognBeacon.getClass().getName());
-		}
-	}
 }
