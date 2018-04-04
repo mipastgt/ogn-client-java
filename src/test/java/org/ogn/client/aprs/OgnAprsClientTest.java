@@ -38,9 +38,9 @@ public class OgnAprsClientTest {
 		System.setProperty(PROP_OGN_SRV_RECONNECTION_TIMEOUT, "1000");
 	}
 
-	static List<String> serverSentences = new ArrayList<String>();
+	static List<String>	serverSentences	= new ArrayList<String>();
 
-	TcpMockAprsServer aprsServer;
+	TcpMockAprsServer	aprsServer;
 
 	static class AcListener implements AircraftBeaconListener {
 

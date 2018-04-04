@@ -31,10 +31,10 @@ public class OgnDemoAircraftBeaconsClient {
 		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
 	}
 
-	static IgcLogger igcLogger = new IgcLogger();
+	static IgcLogger	igcLogger	= new IgcLogger();
 
 	// enable if you want to log to IGC files
-	static boolean logIGC = false;
+	static boolean		logIGC		= false;
 
 	static class AcListener implements AircraftBeaconListener {
 

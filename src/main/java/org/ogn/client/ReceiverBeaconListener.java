@@ -7,8 +7,7 @@ package org.ogn.client;
 import org.ogn.commons.beacon.ReceiverBeacon;
 
 /**
- * Interface that needs to be implemented by all entities subscribing to
- * ReceiverBeacons
+ * Interface that needs to be implemented by all entities subscribing to ReceiverBeacons
  * 
  * @author wbuczak
  */

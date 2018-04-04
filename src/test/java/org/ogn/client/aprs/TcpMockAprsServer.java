@@ -26,16 +26,16 @@ import org.slf4j.LoggerFactory;
  */
 public class TcpMockAprsServer {
 
-	private static Logger LOG = LoggerFactory.getLogger(TcpMockAprsServer.class);
+	private static Logger		LOG								= LoggerFactory.getLogger(TcpMockAprsServer.class);
 
-	private static final long DEFAULT_MSG_DELIVERY_INTERVAL = 1000;
-	private int port;
-	private long msgDeliveryInterval;
-	private List<String> clientSentences = new ArrayList<>();
-	private List<String> serverSentences;
+	private static final long	DEFAULT_MSG_DELIVERY_INTERVAL	= 1000;
+	private int					port;
+	private long				msgDeliveryInterval;
+	private List<String>		clientSentences					= new ArrayList<>();
+	private List<String>		serverSentences;
 
-	private ExecutorService executor = Executors.newSingleThreadExecutor();
-	private volatile Future<?> srvFuture;
+	private ExecutorService		executor						= Executors.newSingleThreadExecutor();
+	private volatile Future<?>	srvFuture;
 
 	public TcpMockAprsServer(int port, List<String> serverSentences, long msgDeliveryInterval) {
 		this.port = port;
@@ -85,8 +85,8 @@ public class TcpMockAprsServer {
 					String clientSentence;
 					serverSocket = new ServerSocket(port);
 					clientSocket = serverSocket.accept();
-					BufferedReader inFromClient = new BufferedReader(new InputStreamReader(
-							clientSocket.getInputStream()));
+					BufferedReader inFromClient =
+							new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 					DataOutputStream outToClient = new DataOutputStream(clientSocket.getOutputStream());
 					clientSentence = inFromClient.readLine();
 
@@ -107,7 +107,7 @@ public class TcpMockAprsServer {
 					serverSocket.close();
 					LOG.info("connection terminated");
 
-				}// while
+				} // while
 			} catch (IOException ex) {
 				LOG.warn("exception caught", ex);
 			} catch (InterruptedException ex) {
