@@ -35,7 +35,7 @@
     Define the root logger.
   -->     
   <root>
-    <level value="all" />
+    <level value="debug" />
     <appender-ref ref="ConsoleAppender"/>  
   </root>
 
