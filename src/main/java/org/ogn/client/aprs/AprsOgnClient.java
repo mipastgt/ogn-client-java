@@ -121,12 +121,12 @@ public class AprsOgnClient implements OgnClient {
 
 					socket = new Socket(srvAddress, port);
 
-					final PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+					final PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 					LOG.info("logging in as: {}", loginSentence);
 					// out.println(loginSentence);
 
 					// start the keep-live msg sender
-					startKeepAliveThread(out, loginSentence);
+					startKeepAliveThread(writer, loginSentence);
 
 					final BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 					LOG.info("Connected. Waiting for data...");
@@ -139,7 +139,7 @@ public class AprsOgnClient implements OgnClient {
 							break;
 						}
 
-						// out.println(line);
+						writer.println(line);
 						processAprsLine(line);
 					}
 
