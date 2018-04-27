@@ -29,7 +29,9 @@ public class OgnDemoAircraftBeaconsClient {
 		// this demo and there is
 		// no point in wasting CPU on that
 		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
-		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_APRS_FILTER, "r/+49.782/+19.450/5");
+
+		// aprs filter can be passed either by a jvm env variable or directly in the connect() method - see below
+		// System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_APRS_FILTER, "r/+49.782/+19.450/5");
 	}
 
 	static IgcLogger	igcLogger	= new IgcLogger();
