@@ -21,4 +21,5 @@ public interface OgnClientProperties {
 	String	PROP_OGN_CLIENT_KEEP_ALIVE_INTERVAL		= "ogn.client.keep_alive";
 	String	PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS	= "ogn.client.ignore_receiver_beacons";
 	String	PROP_OGN_CLIENT_IGNORE_AIRCRAFT_BEACONS	= "ogn.client.ignore_aircraft_beacons";
+	String	PROP_OGN_CLIENT_APRS_FILTER				= "ogn.client.aprs.filter";
 }

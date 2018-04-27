@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +63,7 @@ public class AprsOgnClient implements OgnClient {
 	private final String					aprsServerName;
 	private final int						aprsPort;
 	private final int						aprsPortFiltered;
+	private final String					aprsFilter;
 	private final int						reconnectionTimeout;
 	private final int						keepAlive;
 	private final String					appName;
@@ -112,14 +114,16 @@ public class AprsOgnClient implements OgnClient {
 								formatAprsLoginLine(clientId, READ_ONLY_PASSCODE, appName, appVersion, aprsFilter);
 					}
 
-					// if filter is specified connect to a different port
-					LOG.info("connecting to server: {}:{}", aprsServerName, port);
+					final InetAddress srvAddress = InetAddress.getByName(aprsServerName);
 
-					socket = new Socket(aprsServerName, port);
+					// if filter is specified connect to a different port
+					LOG.info("connecting to server: {}[{}]:{}", aprsServerName, srvAddress.getHostAddress(), port);
+
+					socket = new Socket(srvAddress, port);
 
 					final PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-					LOG.debug("logging in as: {}", loginSentence);
-					out.println(loginSentence);
+					LOG.info("logging in as: {}", loginSentence);
+					// out.println(loginSentence);
 
 					// start the keep-live msg sender
 					startKeepAliveThread(out, loginSentence);
@@ -135,7 +139,7 @@ public class AprsOgnClient implements OgnClient {
 							break;
 						}
 
-						// System.out.println(line);
+						// out.println(line);
 						processAprsLine(line);
 					}
 
@@ -278,6 +282,7 @@ public class AprsOgnClient implements OgnClient {
 		this.aprsServerName = builder.srvName;
 		this.aprsPort = builder.srvPort;
 		this.aprsPortFiltered = builder.srvPortFiltered;
+		this.aprsFilter = builder.aprsFilter;
 		this.reconnectionTimeout = builder.reconnectionTimeout;
 		this.keepAlive = builder.keepAlive;
 		this.appName = builder.appName;
@@ -298,6 +303,7 @@ public class AprsOgnClient implements OgnClient {
 		private String								srvName					= OGN_DEFAULT_SERVER_NAME;
 		private int									srvPort					= OGN_DEFAULT_SRV_PORT;
 		private int									srvPortFiltered			= OGN_DEFAULT_SRV_PORT_FILTERED;
+		private String								aprsFilter;
 		private int									reconnectionTimeout		= OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
 		private int									keepAlive				= OGN_CLIENT_DEFAULT_KEEP_ALIVE_INTERVAL_MS;
 		private String								appName					= OGN_DEFAULT_APP_NAME;
@@ -319,6 +325,11 @@ public class AprsOgnClient implements OgnClient {
 
 		public Builder portFiltered(final int port) {
 			this.srvPortFiltered = port;
+			return this;
+		}
+
+		public Builder aprsFilter(final String filter) {
+			this.aprsFilter = filter;
 			return this;
 		}
 
@@ -394,7 +405,8 @@ public class AprsOgnClient implements OgnClient {
 
 	@Override
 	public void connect() {
-		connect(null);
+		connect(this.aprsFilter);
+		// connect(null);
 	}
 
 	@Override

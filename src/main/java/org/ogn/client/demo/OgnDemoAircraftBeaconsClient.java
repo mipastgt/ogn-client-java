@@ -29,6 +29,7 @@ public class OgnDemoAircraftBeaconsClient {
 		// this demo and there is
 		// no point in wasting CPU on that
 		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
+		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_APRS_FILTER, "r/+49.782/+19.450/5");
 	}
 
 	static IgcLogger	igcLogger	= new IgcLogger();
@@ -59,7 +60,7 @@ public class OgnDemoAircraftBeaconsClient {
 	}
 
 	public static void main(String[] args) throws Exception {
-		OgnClient client = OgnClientFactory.createClient();
+		final OgnClient client = OgnClientFactory.createClient();
 
 		System.out.println("connecting...");
 
