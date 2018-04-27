@@ -123,7 +123,7 @@ public class AprsOgnClient implements OgnClient {
 
 					final PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 					LOG.info("logging in as: {}", loginSentence);
-					// out.println(loginSentence);
+					writer.println(loginSentence);
 
 					// start the keep-live msg sender
 					startKeepAliveThread(writer, loginSentence);
@@ -139,7 +139,7 @@ public class AprsOgnClient implements OgnClient {
 							break;
 						}
 
-						writer.println(line);
+						// System.out.println(line);
 						processAprsLine(line);
 					}
 
