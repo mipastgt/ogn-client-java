@@ -11,7 +11,6 @@ import java.util.Optional;
 import org.ogn.client.AircraftBeaconListener;
 import org.ogn.client.OgnClient;
 import org.ogn.client.OgnClientFactory;
-import org.ogn.client.OgnClientProperties;
 import org.ogn.commons.beacon.AircraftBeacon;
 import org.ogn.commons.beacon.AircraftDescriptor;
 import org.ogn.commons.beacon.descriptor.AircraftDescriptorProvider;
@@ -27,13 +26,6 @@ import org.ogn.commons.utils.JsonUtils;
  * @author wbuczak
  */
 public class OgnDemoAircraftBeaconsClient2 {
-
-	static {
-		// ignore parsing receiver beacons, we are not interested in them in
-		// this demo and there is
-		// no point in wasting CPU on that
-		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
-	}
 
 	static IgcLogger	igcLogger	= new IgcLogger();
 
@@ -58,6 +50,7 @@ public class OgnDemoAircraftBeaconsClient2 {
 				igcLogger.log(beacon, descriptor);
 
 			out.println("*********************************************");
+
 		}
 	}
 
@@ -81,16 +74,16 @@ public class OgnDemoAircraftBeaconsClient2 {
 	public static void main(String[] args) throws Exception {
 
 		// create an instance of OGN descriptor provider
-		AircraftDescriptorProvider adp1 = new FileDbDescriptorProvider<OgnDb>(OgnDb.class, 10);
+		final AircraftDescriptorProvider adp1 = new FileDbDescriptorProvider<OgnDb>(OgnDb.class, 10);
 
 		// create an instance of "custom" descriptor provider
-		AircraftDescriptorProvider adp2 = new MyCustomAircraftDescriptorProvider();
+		final AircraftDescriptorProvider adp2 = new MyCustomAircraftDescriptorProvider();
 
 		// NOTE: the order matters. The OGN client will try to query for the
 		// aircraft information the first provider in the list. Only if no match is found it will continue with the
 		// second provider etc..
 		// Create ogn client and give it the previously created descriptor providers
-		OgnClient client = OgnClientFactory.createClient(new AircraftDescriptorProvider[]{adp1, adp2});
+		final OgnClient client = OgnClientFactory.createClient(new AircraftDescriptorProvider[]{adp1, adp2});
 
 		System.out.println("connecting...");
 

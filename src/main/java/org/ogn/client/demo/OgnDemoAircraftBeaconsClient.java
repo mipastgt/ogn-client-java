@@ -11,7 +11,6 @@ import java.util.Optional;
 import org.ogn.client.AircraftBeaconListener;
 import org.ogn.client.OgnClient;
 import org.ogn.client.OgnClientFactory;
-import org.ogn.client.OgnClientProperties;
 import org.ogn.commons.beacon.AircraftBeacon;
 import org.ogn.commons.beacon.AircraftDescriptor;
 import org.ogn.commons.igc.IgcLogger;
@@ -25,11 +24,6 @@ import org.ogn.commons.utils.JsonUtils;
 public class OgnDemoAircraftBeaconsClient {
 
 	static {
-		// ignore parsing receiver beacons, we are not interested in them in
-		// this demo and there is
-		// no point in wasting CPU on that
-		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
-
 		// aprs filter can be passed either by a jvm env variable or directly in the connect() method - see below
 		// System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_APRS_FILTER, "r/+49.782/+19.450/5");
 	}

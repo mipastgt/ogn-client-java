@@ -68,8 +68,6 @@ public class AprsOgnClient implements OgnClient {
 	private final int						keepAlive;
 	private final String					appName;
 	private final String					appVersion;
-	private final boolean					processReceiverBeacons;
-	private final boolean					processAircraftBeacons;
 
 	private AircraftDescriptorProvider[]	descriptorProviders;
 
@@ -260,8 +258,7 @@ public class AprsOgnClient implements OgnClient {
 
 				try {
 
-					final OgnBeacon beacon =
-							AprsLineParser.get().parse(aprsLine, processAircraftBeacons, processReceiverBeacons);
+					final OgnBeacon beacon = AprsLineParser.get().parse(aprsLine);
 
 					// a beacon may be null in case in hasn't been parsed
 					// correctly or if a receiver or aircraft beacon parsing is
@@ -287,12 +284,6 @@ public class AprsOgnClient implements OgnClient {
 		this.keepAlive = builder.keepAlive;
 		this.appName = builder.appName;
 		this.appVersion = builder.appVersion;
-		// user may disable processing receivers beacons (to gain performance if
-		// rec.beacons are not needed)
-		this.processReceiverBeacons = !builder.ignoreReceiverBeacons;
-		// user may disable processing receivers beacons (to gain performance if
-		// rec.beacons are not needed)
-		this.processAircraftBeacons = !builder.ignoreAircraftBeacons;
 
 		// aircraft descriptor providers are not mandatory
 		if (builder.descriptorProviders != null)
@@ -300,16 +291,14 @@ public class AprsOgnClient implements OgnClient {
 	}
 
 	public static class Builder {
-		private String								srvName					= OGN_DEFAULT_SERVER_NAME;
-		private int									srvPort					= OGN_DEFAULT_SRV_PORT;
-		private int									srvPortFiltered			= OGN_DEFAULT_SRV_PORT_FILTERED;
+		private String								srvName				= OGN_DEFAULT_SERVER_NAME;
+		private int									srvPort				= OGN_DEFAULT_SRV_PORT;
+		private int									srvPortFiltered		= OGN_DEFAULT_SRV_PORT_FILTERED;
 		private String								aprsFilter;
-		private int									reconnectionTimeout		= OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
-		private int									keepAlive				= OGN_CLIENT_DEFAULT_KEEP_ALIVE_INTERVAL_MS;
-		private String								appName					= OGN_DEFAULT_APP_NAME;
-		private String								appVersion				= OGN_DEFAULT_APP_VERSION;
-		private boolean								ignoreReceiverBeacons	= false;
-		private boolean								ignoreAircraftBeacons	= false;
+		private int									reconnectionTimeout	= OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
+		private int									keepAlive			= OGN_CLIENT_DEFAULT_KEEP_ALIVE_INTERVAL_MS;
+		private String								appName				= OGN_DEFAULT_APP_NAME;
+		private String								appVersion			= OGN_DEFAULT_APP_VERSION;
 
 		private List<AircraftDescriptorProvider>	descriptorProviders;
 
@@ -350,16 +339,6 @@ public class AprsOgnClient implements OgnClient {
 
 		public Builder keepAlive(final int keepAliveInt) {
 			this.keepAlive = keepAliveInt;
-			return this;
-		}
-
-		public Builder ignoreReceiverBeacons(final boolean flag) {
-			this.ignoreReceiverBeacons = flag;
-			return this;
-		}
-
-		public Builder ignoreAicraftrBeacons(final boolean flag) {
-			this.ignoreAircraftBeacons = flag;
 			return this;
 		}
 

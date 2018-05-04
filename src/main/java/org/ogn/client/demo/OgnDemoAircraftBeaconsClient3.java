@@ -12,7 +12,6 @@ import org.ogn.client.AircraftBeaconListener;
 import org.ogn.client.OgnClient;
 import org.ogn.client.OgnClientConstants;
 import org.ogn.client.OgnClientFactory;
-import org.ogn.client.OgnClientProperties;
 import org.ogn.commons.beacon.AircraftBeacon;
 import org.ogn.commons.beacon.AircraftDescriptor;
 import org.ogn.commons.beacon.descriptor.AircraftDescriptorProvider;
@@ -27,13 +26,6 @@ import org.ogn.commons.utils.JsonUtils;
  * @author wbuczak
  */
 public class OgnDemoAircraftBeaconsClient3 {
-
-	static {
-		// ignore parsing receiver beacons, we are not interested in them in
-		// this demo and there is
-		// no point in wasting CPU on that
-		System.setProperty(OgnClientProperties.PROP_OGN_CLIENT_IGNORE_RECEIVER_BEACONS, "true");
-	}
 
 	static IgcLogger	igcLogger	= new IgcLogger();
 
@@ -63,15 +55,15 @@ public class OgnDemoAircraftBeaconsClient3 {
 
 	public static void main(String[] args) throws Exception {
 
-		AircraftDescriptorProvider adp = new FileDbDescriptorProvider<OgnDb>(OgnDb.class);
+		final AircraftDescriptorProvider adp = new FileDbDescriptorProvider<OgnDb>(OgnDb.class);
 
 		// create ogn client and pass it a reference to the previously created
 		// descriptor provider
-		OgnClient client1 = OgnClientFactory.createClient();
+		final OgnClient client1 = OgnClientFactory.createClient();
 
 		// create second instance of OGN client, this one will connect to a
 		// different port
-		OgnClient client2 = OgnClientFactory.getBuilder().port(OgnClientConstants.OGN_DEFAULT_SRV_PORT + 1000)
+		final OgnClient client2 = OgnClientFactory.getBuilder().port(OgnClientConstants.OGN_DEFAULT_SRV_PORT + 1000)
 				.descriptorProviders(adp).build();
 
 		System.out.println("connecting...");
