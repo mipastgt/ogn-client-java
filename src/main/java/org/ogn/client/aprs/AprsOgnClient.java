@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.ogn.client.AircraftBeaconListener;
@@ -77,6 +78,15 @@ public class AprsOgnClient implements OgnClient {
 	private volatile Future<?>				socketListenerFuture;
 	private volatile Future<?>				pollerFuture;
 	private volatile Future<?>				keepAliveFuture;
+	
+	private static class DaemonThreadFactory implements ThreadFactory {
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread t = Executors.defaultThreadFactory().newThread(r);
+			t.setDaemon(true);
+			return t;
+		}
+	};
 
 	private class AprsSocketListenerTask implements Runnable {
 		private final String	aprsFilter;
@@ -373,8 +383,8 @@ public class AprsOgnClient implements OgnClient {
 	@Override
 	public synchronized void connect(final String filter) {
 		if (socketListenerFuture == null) {
-			executor = Executors.newCachedThreadPool();
-			scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+			executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
+			scheduledExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory());
 			pollerFuture = executor.submit(new PollerTask());
 			socketListenerFuture = executor.submit(new AprsSocketListenerTask(filter));
 		} else {
