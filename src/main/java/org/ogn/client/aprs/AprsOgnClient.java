@@ -155,7 +155,7 @@ public class AprsOgnClient implements OgnClient {
 							break;
 						}
 
-						System.out.println(line);
+						// System.out.println(line);
 						processAprsLine(line);
 					}
 
