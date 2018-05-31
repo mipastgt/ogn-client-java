@@ -9,10 +9,14 @@ import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_APP_NAME;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_APP_VERSION;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SERVER_NAME;
-import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT_FILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT_UNFILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_SSL_PORT_FILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_SSL_PORT_UNFILTERED;
+import static org.ogn.client.OgnClientConstants.READ_ONLY_PASSCODE;
 import static org.ogn.commons.utils.AprsUtils.formatAprsLoginLine;
 import static org.ogn.commons.utils.AprsUtils.generateClientId;
+import static org.ogn.commons.utils.AprsUtils.generatePass;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLSocketFactory;
+
 import org.ogn.client.AircraftBeaconListener;
 import org.ogn.client.OgnClient;
 import org.ogn.client.ReceiverBeaconListener;
@@ -52,14 +58,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AprsOgnClient implements OgnClient {
 
-	private static final Logger				LOG					= LoggerFactory.getLogger(AprsOgnClient.class);
-
-	/**
-	 * read only pass-code
-	 * 
-	 * @see <a href="http://www.aprs-is.net/Connecting.aspx">Connecting to APRS-IS</a>
-	 */
-	private static final String				READ_ONLY_PASSCODE	= "-1";
+	private static final Logger				LOG	= LoggerFactory.getLogger(AprsOgnClient.class);
 
 	private final String					aprsServerName;
 	private final int						aprsPort;
@@ -69,6 +68,7 @@ public class AprsOgnClient implements OgnClient {
 	private final int						keepAlive;
 	private final String					appName;
 	private final String					appVersion;
+	private final String					ognClientId;
 
 	private AircraftDescriptorProvider[]	descriptorProviders;
 
@@ -78,11 +78,17 @@ public class AprsOgnClient implements OgnClient {
 	private volatile Future<?>				socketListenerFuture;
 	private volatile Future<?>				pollerFuture;
 	private volatile Future<?>				keepAliveFuture;
-	
+
+	private final boolean					validateClient;
+
+	private final boolean					useSsl;
+	private final int						aprsSslPort;
+	private final int						aprsSslPortFiltered;
+
 	private static class DaemonThreadFactory implements ThreadFactory {
 		@Override
 		public Thread newThread(Runnable r) {
-			Thread t = Executors.defaultThreadFactory().newThread(r);
+			final Thread t = Executors.defaultThreadFactory().newThread(r);
 			t.setDaemon(true);
 			return t;
 		}
@@ -110,24 +116,26 @@ public class AprsOgnClient implements OgnClient {
 
 				try {
 
-					int port = aprsPort;
+					int port = useSsl ? aprsSslPort : aprsPort;
 					String loginSentence = null;
 
-					final String clientId = generateClientId();
+					final String clientId = null == ognClientId ? generateClientId() : ognClientId;
+					final String clientPass =
+							validateClient ? Integer.toString(generatePass(clientId)) : READ_ONLY_PASSCODE;
+
 					if (null == aprsFilter) {
-						loginSentence = formatAprsLoginLine(clientId, READ_ONLY_PASSCODE, appName, appVersion);
+						loginSentence = formatAprsLoginLine(clientId, clientPass, appName, appVersion);
 					} else {
-						port = aprsPortFiltered;
-						loginSentence =
-								formatAprsLoginLine(clientId, READ_ONLY_PASSCODE, appName, appVersion, aprsFilter);
+						port = useSsl ? aprsSslPortFiltered : aprsPortFiltered;
+						loginSentence = formatAprsLoginLine(clientId, clientPass, appName, appVersion, aprsFilter);
 					}
 
 					final InetAddress srvAddress = InetAddress.getByName(aprsServerName);
 
 					// if filter is specified connect to a different port
 					LOG.info("connecting to server: {}[{}]:{}", aprsServerName, srvAddress.getHostAddress(), port);
-
-					socket = new Socket(srvAddress, port);
+					socket = createSocket(srvAddress, port, useSsl);
+					LOG.info("connected !");
 
 					final PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 					LOG.info("logging in as: {}", loginSentence);
@@ -137,7 +145,7 @@ public class AprsOgnClient implements OgnClient {
 					startKeepAliveThread(writer, loginSentence);
 
 					final BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-					LOG.info("Connected. Waiting for data...");
+					LOG.info("Waiting for data...");
 
 					String line;
 					while (!interrupted && (line = in.readLine()) != null) {
@@ -147,7 +155,7 @@ public class AprsOgnClient implements OgnClient {
 							break;
 						}
 
-						// System.out.println(line);
+						System.out.println(line);
 						processAprsLine(line);
 					}
 
@@ -173,6 +181,15 @@ public class AprsOgnClient implements OgnClient {
 			LOG.debug("stopped.");
 
 		}// run
+
+		private Socket createSocket(InetAddress srvAddress, int port, boolean ssl) throws IOException {
+			if (ssl) {
+				final SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+				return sslSocketFactory.createSocket(srvAddress, port);
+			} else {
+				return new Socket(srvAddress, port);
+			}
+		}
 
 		/**
 		 * 
@@ -287,13 +304,19 @@ public class AprsOgnClient implements OgnClient {
 
 	private AprsOgnClient(Builder builder) {
 		this.aprsServerName = builder.srvName;
-		this.aprsPort = builder.srvPort;
-		this.aprsPortFiltered = builder.srvPortFiltered;
+		this.aprsPort = builder.unfilteredPort;
+		this.aprsPortFiltered = builder.filteredPort;
+		this.useSsl = builder.useSsl;
+		this.aprsSslPort = builder.unfilteredSslPort;
+		this.aprsSslPortFiltered = builder.filteredSslPort;
+
 		this.aprsFilter = builder.aprsFilter;
 		this.reconnectionTimeout = builder.reconnectionTimeout;
 		this.keepAlive = builder.keepAlive;
 		this.appName = builder.appName;
 		this.appVersion = builder.appVersion;
+		this.ognClientId = builder.ognClientId;
+		this.validateClient = builder.validateClient;
 
 		// aircraft descriptor providers are not mandatory
 		if (builder.descriptorProviders != null)
@@ -302,28 +325,34 @@ public class AprsOgnClient implements OgnClient {
 
 	public static class Builder {
 		private String								srvName				= OGN_DEFAULT_SERVER_NAME;
-		private int									srvPort				= OGN_DEFAULT_SRV_PORT;
-		private int									srvPortFiltered		= OGN_DEFAULT_SRV_PORT_FILTERED;
+		private int									unfilteredPort		= OGN_DEFAULT_SRV_PORT_UNFILTERED;
+		private int									filteredPort		= OGN_DEFAULT_SRV_PORT_FILTERED;
+		private int									unfilteredSslPort	= OGN_DEFAULT_SRV_SSL_PORT_UNFILTERED;
+		private int									filteredSslPort		= OGN_DEFAULT_SRV_SSL_PORT_FILTERED;
+
 		private String								aprsFilter;
 		private int									reconnectionTimeout	= OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
 		private int									keepAlive			= OGN_CLIENT_DEFAULT_KEEP_ALIVE_INTERVAL_MS;
 		private String								appName				= OGN_DEFAULT_APP_NAME;
 		private String								appVersion			= OGN_DEFAULT_APP_VERSION;
+		private String								ognClientId;
 
 		private List<AircraftDescriptorProvider>	descriptorProviders;
+		private boolean								validateClient;
+		private boolean								useSsl;
 
 		public Builder serverName(final String name) {
 			this.srvName = name;
 			return this;
 		}
 
-		public Builder port(final int port) {
-			this.srvPort = port;
+		public Builder unfilteredPort(final int port) {
+			this.unfilteredPort = port;
 			return this;
 		}
 
-		public Builder portFiltered(final int port) {
-			this.srvPortFiltered = port;
+		public Builder filteredPort(final int port) {
+			this.filteredPort = port;
 			return this;
 		}
 
@@ -347,6 +376,11 @@ public class AprsOgnClient implements OgnClient {
 			return this;
 		}
 
+		public Builder ognClientId(final String clientId) {
+			this.ognClientId = clientId != null && clientId.length() > 9 ? clientId.substring(0, 9) : clientId;
+			return this;
+		}
+
 		public Builder keepAlive(final int keepAliveInt) {
 			this.keepAlive = keepAliveInt;
 			return this;
@@ -359,6 +393,26 @@ public class AprsOgnClient implements OgnClient {
 
 		public Builder descriptorProviders(AircraftDescriptorProvider... descProviders) {
 			this.descriptorProviders = Arrays.asList(descProviders);
+			return this;
+		}
+
+		public Builder validateClient(boolean ognClientValidate) {
+			this.validateClient = ognClientValidate;
+			return this;
+		}
+
+		public Builder unfilteredSslPort(int unfilteredSslPort) {
+			this.unfilteredSslPort = unfilteredSslPort;
+			return this;
+		}
+
+		public Builder filteredSslPort(int filteredSslPort) {
+			this.filteredSslPort = filteredSslPort;
+			return this;
+		}
+
+		public Builder useSsl(boolean useSsl) {
+			this.useSsl = useSsl;
 			return this;
 		}
 

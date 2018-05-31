@@ -5,12 +5,25 @@
 package org.ogn.client;
 
 public interface OgnClientConstants {
+
 	String	OGN_DEFAULT_SERVER_NAME						= "aprs.glidernet.org";
 	String	OGN_DEFAULT_APP_NAME						= "ogn-client-java";
-	String	OGN_DEFAULT_APP_VERSION						= "1.0.0";
+	String	OGN_DEFAULT_APP_VERSION						= "1.1.0";
 
-	Integer	OGN_DEFAULT_SRV_PORT						= 10152;
+	/**
+	 * read only pass-code
+	 * 
+	 * @see <a href="http://www.aprs-is.net/Connecting.aspx">Connecting to APRS-IS</a>
+	 */
+	String	READ_ONLY_PASSCODE							= "-1";
+
+	Integer	OGN_DEFAULT_SRV_PORT_UNFILTERED				= 10152;
 	Integer	OGN_DEFAULT_SRV_PORT_FILTERED				= 14580;
+
+	Integer	OGN_DEFAULT_SRV_SSL_PORT_UNFILTERED			= 21152;
+
+	// TODO: update
+	Integer	OGN_DEFAULT_SRV_SSL_PORT_FILTERED			= 21153;
 
 	Integer	OGN_DEFAULT_RECONNECTION_TIMEOUT_MS			= 5000;
 

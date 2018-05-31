@@ -9,12 +9,17 @@ import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_APP_NAME;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_APP_VERSION;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_RECONNECTION_TIMEOUT_MS;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SERVER_NAME;
-import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT;
 import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT_FILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_PORT_UNFILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_SSL_PORT_FILTERED;
+import static org.ogn.client.OgnClientConstants.OGN_DEFAULT_SRV_SSL_PORT_UNFILTERED;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_APP_NAME;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_APP_VERSION;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_APRS_FILTER;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_ID;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_KEEP_ALIVE_INTERVAL;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_USE_SSL;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_VALIDATE;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_NAME;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_PORT_FILTERED;
 import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_PORT_UNFILTERED;
@@ -35,10 +40,16 @@ public class OgnClientFactory {
 
 	private static String	serverName			= System.getProperty(PROP_OGN_SRV_NAME, OGN_DEFAULT_SERVER_NAME);
 
-	private static int		port				=
-			Integer.getInteger(PROP_OGN_SRV_PORT_UNFILTERED, OGN_DEFAULT_SRV_PORT);
-	private static int		portFiltered		=
+	private static int		unfilteredPort		=
+			Integer.getInteger(PROP_OGN_SRV_PORT_UNFILTERED, OGN_DEFAULT_SRV_PORT_UNFILTERED);
+	private static int		filteredPort		=
 			Integer.getInteger(PROP_OGN_SRV_PORT_FILTERED, OGN_DEFAULT_SRV_PORT_FILTERED);
+
+	private static int		unfilteredSslPort	=
+			Integer.getInteger(PROP_OGN_SRV_PORT_UNFILTERED, OGN_DEFAULT_SRV_SSL_PORT_UNFILTERED);
+	private static int		filteredSslPort		=
+			Integer.getInteger(PROP_OGN_SRV_PORT_FILTERED, OGN_DEFAULT_SRV_SSL_PORT_FILTERED);
+
 	private static int		reconnectionTimeout	=
 			Integer.getInteger(PROP_OGN_SRV_RECONNECTION_TIMEOUT, OGN_DEFAULT_RECONNECTION_TIMEOUT_MS);
 
@@ -49,6 +60,11 @@ public class OgnClientFactory {
 	private static String	appVersion			=
 			System.getProperty(PROP_OGN_CLIENT_APP_VERSION, OGN_DEFAULT_APP_VERSION);
 
+	private static String	ognClientId			= System.getProperty(PROP_OGN_CLIENT_ID);
+
+	private static boolean	useSsl				= Boolean.parseBoolean(System.getProperty(PROP_OGN_CLIENT_USE_SSL));
+	private static boolean	ognClientValidate	= Boolean.parseBoolean(System.getProperty(PROP_OGN_CLIENT_VALIDATE));
+
 	private static String	aprsFilter			= System.getProperty(PROP_OGN_CLIENT_APRS_FILTER);
 
 	private OgnClientFactory() {
@@ -56,9 +72,10 @@ public class OgnClientFactory {
 	}
 
 	public static AprsOgnClient.Builder getBuilder() {
-		return new AprsOgnClient.Builder().serverName(serverName).port(port).portFiltered(portFiltered)
-				.aprsFilter(aprsFilter).reconnectionTimeout(reconnectionTimeout).appName(appName).appVersion(appVersion)
-				.keepAlive(keepAliveInterval);
+		return new AprsOgnClient.Builder().serverName(serverName).useSsl(useSsl).unfilteredPort(unfilteredPort)
+				.filteredPort(filteredPort).unfilteredSslPort(unfilteredSslPort).filteredSslPort(filteredSslPort)
+				.aprsFilter(aprsFilter).reconnectionTimeout(reconnectionTimeout).ognClientId(ognClientId)
+				.validateClient(ognClientValidate).appName(appName).appVersion(appVersion).keepAlive(keepAliveInterval);
 	}
 
 	public static OgnClient createClient() {

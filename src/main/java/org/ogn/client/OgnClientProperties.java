@@ -20,4 +20,7 @@ public interface OgnClientProperties {
 
 	String	PROP_OGN_CLIENT_KEEP_ALIVE_INTERVAL	= "ogn.client.keep_alive";
 	String	PROP_OGN_CLIENT_APRS_FILTER			= "ogn.client.aprs.filter";
+	String	PROP_OGN_CLIENT_ID					= "ogn.client.id";
+	String	PROP_OGN_CLIENT_VALIDATE			= "ogn.cleint.validate";
+	String	PROP_OGN_CLIENT_USE_SSL				= "ogn.client.use_ssl";
 }
