@@ -63,10 +63,11 @@ public class OgnDemoAircraftBeaconsClient3 {
 
 		// create second instance of OGN client, this one will connect to a
 		// different port
-		final OgnClient client2 = OgnClientFactory.getBuilder().port(OgnClientConstants.OGN_DEFAULT_SRV_PORT + 1000)
-				.descriptorProviders(adp).build();
+		final OgnClient client2 =
+				OgnClientFactory.getBuilder().filteredPort(OgnClientConstants.OGN_DEFAULT_SRV_PORT_UNFILTERED + 4428)
+						.descriptorProviders(adp).build();
 
-		System.out.println("connecting...");
+		out.println("connecting...");
 		client1.connect();
 
 		// set some filter to the second instance of OGN client

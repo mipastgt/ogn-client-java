@@ -35,10 +35,9 @@ public class OgnDemoRawAprsAircraftBeaconsClient {
 
 		out.println("connecting...");
 
-		// all beacons except FNT*
-		client.connect("t/* -p/FNT");
-
+		client.connect();
 		client.subscribeToAircraftBeacons(new AcListener());
+
 		Thread.sleep(Long.MAX_VALUE);
 	}
 
