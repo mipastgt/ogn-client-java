@@ -112,11 +112,12 @@ public class AprsOgnClient implements OgnClient {
 			LOG.debug("starting...");
 			boolean interrupted = false;
 
+			int port = 0;
 			while (!interrupted) {
 
 				try {
 
-					int port = useSsl ? aprsSslPort : aprsPort;
+					port = useSsl ? aprsSslPort : aprsPort;
 					String loginSentence = null;
 
 					final String clientId = null == ognClientId ? generateClientId() : ognClientId;
@@ -124,6 +125,7 @@ public class AprsOgnClient implements OgnClient {
 							validateClient ? Integer.toString(generatePass(clientId)) : READ_ONLY_PASSCODE;
 
 					if (null == aprsFilter) {
+						port = useSsl ? aprsSslPort : aprsPort;
 						loginSentence = formatAprsLoginLine(clientId, clientPass, appName, appVersion);
 					} else {
 						port = useSsl ? aprsSslPortFiltered : aprsPortFiltered;
@@ -161,7 +163,7 @@ public class AprsOgnClient implements OgnClient {
 
 				} catch (final Exception e) {
 					LOG.error("exception caught while trying to connect to {}:{}. retrying in {} ms", aprsServerName,
-							aprsPort, reconnectionTimeout, e);
+							port, reconnectionTimeout, e);
 					try {
 						Thread.sleep(reconnectionTimeout);
 					} catch (final InterruptedException ex) {
