@@ -6,9 +6,9 @@ package org.ogn.client.aprs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_NAME;
-import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_PORT_UNFILTERED;
-import static org.ogn.client.OgnClientProperties.PROP_OGN_SRV_RECONNECTION_TIMEOUT;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_SRV_NAME;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_SRV_PORT_UNFILTERED;
+import static org.ogn.client.OgnClientProperties.PROP_OGN_CLIENT_SRV_RECONNECTION_TIMEOUT;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -33,9 +33,9 @@ public class OgnAprsClientTest {
 
 	static final Integer APRS_SRV_PORT = 9999;
 	static {
-		System.setProperty(PROP_OGN_SRV_NAME, "localhost");
-		System.setProperty(PROP_OGN_SRV_PORT_UNFILTERED, APRS_SRV_PORT.toString());
-		System.setProperty(PROP_OGN_SRV_RECONNECTION_TIMEOUT, "1000");
+		System.setProperty(PROP_OGN_CLIENT_SRV_NAME, "localhost");
+		System.setProperty(PROP_OGN_CLIENT_SRV_PORT_UNFILTERED, APRS_SRV_PORT.toString());
+		System.setProperty(PROP_OGN_CLIENT_SRV_RECONNECTION_TIMEOUT, "1000");
 	}
 
 	static List<String>	serverSentences	= new ArrayList<String>();
