@@ -135,7 +135,8 @@ public class AprsOgnClient implements OgnClient {
 					final InetAddress srvAddress = InetAddress.getByName(aprsServerName);
 
 					// if filter is specified connect to a different port
-					LOG.info("connecting to server: {}[{}]:{}", aprsServerName, srvAddress.getHostAddress(), port);
+					LOG.info("connecting to server: {}[{}]:{} TLS: {}", aprsServerName, srvAddress.getHostAddress(),
+							port, useSsl ? "yes" : "no");
 					socket = createSocket(srvAddress, port, useSsl);
 					LOG.info("connected !");
 
